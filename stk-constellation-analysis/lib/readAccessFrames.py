@@ -21,11 +21,32 @@
 #      NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 #      OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pandas as pd
 
-def findAccessDurationStatistics(listSatelliteAccesses):
-    listOfDataFrames = []
-    for satelliteAccess in listSatelliteAccesses:
-        listOfDataFrames.append(satelliteAccess)
-    concatenatedFrames = pd.concat(listOfDataFrames)
-    # print(concatenatedFrames)
+import os, glob
+import pandas as pd
+import datetime
+
+from lib.constants import headerStartTime
+from lib.constants import headerEndTime
+
+def readAccessFrames():
+
+    listSatelliteAccesses = []
+
+    for fileToSearch in glob.glob("*.csv"):
+
+        # Get current dataframe
+        df = pd.read_csv(fileToSearch , delimiter=',')
+
+        # Remove miliseconds from datetime string
+        df[headerStartTime] = df[headerStartTime].str[:-4]
+        df[headerEndTime] = df[headerEndTime].str[:-4]
+
+        # Convert time strings into datetime format
+        df[headerStartTime] = df.apply(lambda x: datetime.datetime.strptime(x[headerStartTime], '%d %b %Y %H:%M:%S'),axis=1)
+        df[headerEndTime] = df.apply(lambda x: datetime.datetime.strptime(x[headerEndTime], '%d %b %Y %H:%M:%S'),axis=1)
+
+        # Append dataframe to search list
+        listSatelliteAccesses.append(df)
+
+    return listSatelliteAccesses
