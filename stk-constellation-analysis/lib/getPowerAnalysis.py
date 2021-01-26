@@ -84,7 +84,7 @@ def getPowerAnalysis(satelliteAccess,startDate,endDate,satelliteID):
     # Initialize loop variables
     stepSize = 10
     numberOfDays = 1 #(endDate-startDate).days
-    endTime = 86400*numberOfDays
+    endTime = 5400#86400*numberOfDays
 
     print(currentPath)
 
@@ -94,38 +94,64 @@ def getPowerAnalysis(satelliteAccess,startDate,endDate,satelliteID):
 
 
     powerBalance = 0.0
+    powerConsumption = 0.0
+    powerGeneration = 0.0
 
-    columns = ['Time (UTCG)','Power Balance [W]']
+    accumulatedConsumption = 0.0
+    accumulatedGeneration = 0.0
+
+    columns = ['Time (UTCG)','Power Consumption [W]','Power Generation [W]','Power Balance [W]']
 
     df = pd.DataFrame(columns=columns)
 
     listPowerBalance = []
+    listPowerGeneration = []
+    listPowerConsumption = []
     listTime = []
 
     # Iterate through the STK scenario time.
     for dt in tqdm(range(0,endTime,stepSize)):
         
-        powerBalance = -powerPlatform - powerTtcOFF
-
+        powerGeneration = 0.0
+        powerConsumption = powerPlatform + powerTtcOFF
 
         # Check if satellite is within lighting period
         if isSatelliteInView(startDate,lightingPeriod[0],headerStartTime,headerEndTime):
-            powerBalance = powerBalance + powerSolarArray
+            powerGeneration = powerSolarArray
 
         # Check if satellite is within service region
         if isSatelliteInView(startDate,serviceRegion[0],headerStartTime,headerEndTime):
-            powerBalance = powerBalance - powerPayload
+            powerConsumption = powerConsumption + powerPayload
 
         # Check if satellite is in visibility of the GS
         if isSatelliteInView(startDate,groundStation[0],headerStartTime,headerEndTime):
-            powerBalance = powerBalance + powerTtcOFF - powerTtcON
+            powerConsumption = powerConsumption - powerTtcOFF + powerTtcON
+
+        powerBalance = powerGeneration - powerConsumption
+
+        accumulatedGeneration = accumulatedGeneration + powerGeneration*stepSize        # Energy in [Ws]
+        accumulatedConsumption = accumulatedConsumption + powerConsumption*stepSize     # Energy in [Ws]
 
         listTime.append(startDate)
         listPowerBalance.append(powerBalance)
+        listPowerConsumption.append(powerConsumption)
+        listPowerGeneration.append(powerGeneration)
 
         startDate = startDate + datetime.timedelta(seconds=stepSize)
 
+    energyBalance = accumulatedGeneration - accumulatedConsumption
+
+    print(" ")
+    print("Accumulated GENERATED power over " + str(numberOfDays) + ": " + str(round(accumulatedGeneration/3600)) + " Wh")
+    print(" ")
+    print("Accumulated CONSUMED power over " + str(numberOfDays) + ": " + str(round(accumulatedConsumption/3600)) + " Wh")
+    print(" ")
+    print("Energy BALANCE over " + str(numberOfDays) + ": " + str(energyBalance/3600))
+    print(" ")
+
     df['Time (UTCG)'] = listTime
+    df['Power Consumption [W]'] = listPowerConsumption
+    df['Power Generation [W]'] = listPowerGeneration
     df['Power Balance [W]'] = listPowerBalance
 
     df.to_csv(currentPath+folderToSearch+satelliteID+"/power-balance/powerBalance"+satelliteID+".csv")

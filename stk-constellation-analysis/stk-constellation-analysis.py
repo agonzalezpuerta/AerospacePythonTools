@@ -45,10 +45,13 @@ scriptName = "stk-constellation-analysis.py"
 currentPath = __file__.replace(scriptName,'')
 
 satelliteID = 'BELEM'
-selectedUserTerminal = 'Brasilia'
+selectedUserTerminal = 'Fortaleza'
 folderToSearch = '/input/user-terminals/' + selectedUserTerminal
 
 startDate = datetime.datetime(year= 2022, month= 1,day=1,hour=0,minute=0,second=0)
+endDate = datetime.datetime(year= 2022, month= 2,day=1,hour=0,minute=0,second=0)
+
+startDate = datetime.datetime(year= 2022, month= 1,day=1,hour=5,minute=54,second=30)
 endDate = datetime.datetime(year= 2022, month= 2,day=1,hour=0,minute=0,second=0)
 
 # COLUMN HEADERS
@@ -128,5 +131,3 @@ if enableRevisitTime:
 if enablePowerAnalysis:
 
     df = getPowerAnalysis(listSatelliteAccesses[0],startDate,endDate,satelliteID)
-
-    print(df)
